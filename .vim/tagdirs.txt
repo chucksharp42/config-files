@@ -1,0 +1,3 @@
+/www/mailapi.csharp/class
+/www/mailapi.csharp/public
+/www/multimail.csharp

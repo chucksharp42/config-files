@@ -1,0 +1,51 @@
+#!/bin/sh
+
+#~/bin/s.debug $1
+
+to_user=csharp
+host=$1
+
+last_modified=~/.env_last_modified
+HOMEDIR=$HOME
+HOSTDIR=$HOMEDIR/.env.hosts
+HOSTFILE=$HOSTDIR/$host
+REMOTEHOME=/home/$to_user
+FIRST_RUN=no
+
+# Usage check
+[ -z "$host" ] && { echo "usage: $0 <hostname>"; exit 255; }
+
+# Create files and directories if nec.
+[ -d $HOSTDIR ] || mkdir -p $HOSTDIR
+[ -f $HOSTFILE ] || { touch $HOSTFILE; FIRST_RUN=yes; }
+[ -f $last_modified ] || touch $last_modified
+
+
+# install env - push_key create 
+[ -f $HOSTDIR/keys/$host ] || {
+    $HOMEDIR/bin/push_key.sh $host
+}
+
+#### compare stat -c "%Y" of stamp file ~/.env_last_modified with host file
+
+#MOD_TIME=$(stat -c "%Y" $last_modified)
+#HOST_TIME=$(stat -c "%Y" $HOSTFILE)
+
+# If $last_modified is newer (touched), then send updates
+if [ "$last_modified" -nt "$HOSTFILE" -o "$FIRST_RUN" = "yes" ]; then 
+#if [ "$MOD_TIME" -gt "$HOST_TIME" -o "$FIRST_RUN" = "yes" ]; then 
+
+    # Copy environment
+    #scp -r /mnt/nas/$to_user/* $to_user@$host:/mnt/nas/$to_user/
+    scp -r $HOMEDIR/{.bash_profile,.exrc,.rpmmacros,.inputrc,bin} \
+        $to_user@$host:$REMOTEHOME
+    ssh $to_user@$host "mkdir -p $REMOTEHOME/{out,log}"
+
+    # create timestamp for future updates
+    touch $HOSTFILE
+fi
+
+shift
+# Finally, ssh
+ssh $to_user@$host $@
+

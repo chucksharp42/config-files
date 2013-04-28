@@ -1,0 +1,4 @@
+$if Bash
+  Space: magic-space
+  "\M-o": "\C-a\M-f "
+$endif

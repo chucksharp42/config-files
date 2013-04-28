@@ -1,0 +1,7 @@
+#!/bin/sh
+# uses netstat to get tcp packet re-transmit rate
+STATS=( $(netstat -s | egrep 'segments sen|segments retrans' | sed 's/ seg.*//g;s/ //g' | tr '\n' ' ') )
+SEG_SENT=${STATS[0]}
+SEG_RETRANS=${STATS[1]}
+RETRANS_RATE=$(echo "scale=4; ($SEG_RETRANS / $SEG_SENT) * 100" | bc -l | sed 's/00$//g')
+echo $RETRANS_RATE

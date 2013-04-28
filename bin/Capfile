@@ -1,0 +1,104 @@
+# First, handle ctrl-c gracefully
+Signal.trap 'SIGINT', lambda { exit }
+
+@@myhash = "INSERTHERE"
+
+desc "Watch passive counts"
+task :passives do
+  counts = {}
+  if not exists?(:interval)
+    set(:interval, 10)
+  end
+  puts "Starting passive counting, interval = #{interval} seconds..."
+  while true
+      run "netstat -s | awk '/passive connection openings/{print $1}'" do |channel, stream, data|
+        count = Integer(data)
+        if counts[channel[:host]] != nil
+            puts "#{channel[:host]}: " + String(count - counts[channel[:host]])
+        end
+        counts[channel[:host]] = count
+      end
+      puts "--------------------"
+      sleep interval
+  end
+end
+
+desc "Tail a file"
+task :allerrorlogs do
+  run "tail -f /etc/httpd/logs/*error*"
+end
+
+desc "Tail a file"
+task :tail do
+  sudo "tail -f #{file}"
+end
+
+desc "Upload a file to remote hosts"
+task :upload_file do
+  if not (exists?(:src) and exists?(:dst))
+    puts "usage: cap upload_file -s src=/tmp/a -s dst=/tmp/a HOSTS=a,b,c"
+    exit
+  end
+  puts "upload(#{src}, #{dst})"
+  upload(src, dst)
+end
+
+desc "Restart mwsd service"
+task :restart_mwsd do
+   sudo "/etc/init.d/mwsd restart </dev/null &>/tmp/restart.mwsd.cws.log &"
+   sleep 5
+   sudo "cat /tmp/restart.mwsd.cws.log"
+end 
+
+desc "Restart apache via /etc/httpd/bin/apachectl stop, sslstart"
+task :restart_apache do
+    sudo "/etc/httpd/bin/apachectl stop"
+    sleep 3
+    sudo "/etc/httpd/bin/apachectl sslstart"
+end
+
+desc "Reload apache via /etc/httpd/bin/apachectl graceful"
+task :restart_apache_graceful do
+    sudo "/etc/httpd/bin/apachectl graceful"
+end
+
+
+desc "Get hostname"
+task :hostname do
+    run "hostname"
+end
+
+desc "Get uptime"
+task :uptime do
+    run "uptime" do |channel, stream, data|
+        puts "#{channel[:host]} #{data}"
+    end
+end
+
+desc "Install ssh pub key"
+task :install_key, :on_error => "continue" do
+    user="csharp"
+    home="/home/#{user}"
+    keydir="#{home}/.env.hosts/keys"
+    run "mkdir -p #{home}/.ssh"
+    run "chmod 700 #{home}/.ssh"
+    run "grep -q 'csharp@gd' ~/.ssh/authorized_keys 2>/dev/null || echo 'INSERT PUBKEY CONTENTS HERE' >> #{home}/.ssh/authorized_keys" do |channel, stream, data|
+        keyfile = "#{keydir}/#{channel[:host]}"
+        puts "touching #{keyfile}"
+    end
+    run "chmod 600 #{home}/.ssh/authorized_keys"
+end
+
+desc "Ping 2 counts per server in list, all locally"
+task :ping do
+    for i in find_servers
+        puts i
+        puts `ping -c 2 #{i}`
+    end
+end
+
+desc "Change hash in Capfile then run this on hosts to change"
+task :passwd, :on_error => "continue" do
+    sudo "/usr/sbin/usermod -p '" +  @@myhash + "' csharp"
+end
+

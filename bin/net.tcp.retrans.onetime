@@ -1,0 +1,23 @@
+#!/bin/bash
+INTERVAL=${1:-1}
+
+# previous
+set $(netstat -s | egrep 'segments.*(send|retrans)' | awk '{print $1}' | tr '\n' ' ')
+SEGMENTS_OUT_PREV=$1
+SEGMENTS_RETRANS_PREV=$2
+
+sleep $INTERVAL
+
+# current
+set $(netstat -s | egrep 'segments.*(send|retrans)' | awk '{print $1}' | tr '\n' ' ')
+SEGMENTS_OUT=$1
+SEGMENTS_RETRANS=$2
+set --
+
+SEGMENTS_OUT_DIFF=$((SEGMENTS_OUT - SEGMENTS_OUT_PREV))
+SEGMENTS_RETRANS_DIFF=$((SEGMENTS_RETRANS - SEGMENTS_RETRANS_PREV))
+RETRANS_RATE=$( echo "scale=2; (${SEGMENTS_RETRANS_DIFF} / ${SEGMENTS_OUT_DIFF}) * 100" | bc )
+if [[ "$SEGMENTS_OUT_PREV" -eq 0 && "$SEGMENTS_RETRANS_PREV" -eq 0 ]]; then
+    RETRANS_RATE='-'
+fi
+echo $RETRANS_RATE

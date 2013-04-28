@@ -1,0 +1,11 @@
+#!/bin/bash
+path=$(dirname $0)
+[ -n "$1" ] && cmd2="| egrep '$1' " 
+
+#$path/host.list | sed 's/ .*//g;s/\..*//g' | sort | uniq | \
+	# get rid of extra pre-smtp entries
+	#sed -r '/pre-smtp.{2}-01/d' $cmd2
+
+cmd="cat $path/../hosts/all | sort | uniq | sed -r '/pre-smtp.{2}-01/d' $cmd2"
+
+eval $cmd
