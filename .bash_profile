@@ -1,4 +1,3 @@
-# base-files version 3.9-3
 # dev logs
 alias l="tail -f /etc/httpd/logs/*error* | sed 's/\\\\n/\\n/g'"
 
